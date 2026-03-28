@@ -1,5 +1,4 @@
 // screens/user/UserDashboard.js
-// Panel del colaborador — versión móvil
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity,
@@ -48,7 +47,6 @@ export default function UserDashboard() {
     };
     cargarAvatar();
 
-    // Escuchar cambios en MI PROPIO perfil
     const canalPerfil = supabase
       .channel(`mi-perfil-${userId}`)
       .on('postgres_changes', {
@@ -57,9 +55,9 @@ export default function UserDashboard() {
         table: 'perfiles',
         filter: `id=eq.${userId}`,
       }, (payload) => {
-        // Si el admin nos cambia la foto o el nombre, se actualiza solo
+        
         if (payload.new.avatar_url) setAvatarUrl(payload.new.avatar_url);
-        // Podrías incluso forzar una actualización del contexto si fuera necesario
+        
       })
       .subscribe();
 
@@ -354,7 +352,7 @@ const s = StyleSheet.create({
   logoutIcon: { fontSize: 15 },
   logoutText: { fontSize: 13, fontWeight: '600', color: '#ef4444' },
 
-  // Bottom Tab Bar — acento verde (diferencia visual del admin azul)
+  // Bottom Tab Bar
   tabBar: {
     flexDirection: 'row', backgroundColor: '#080d14',
     borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.06)', paddingBottom: 4,

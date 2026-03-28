@@ -1,3 +1,4 @@
+// context/AuthContext.js
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase, getSession } from '../services/auth';
 import { getPerfil } from '../services/api';
@@ -6,7 +7,7 @@ const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(null);
-  const [perfil, setPerfil] = useState(null);
+  const [perfil,  setPerfil]  = useState(null);
   const [loading, setLoading] = useState(true);
 
   const cargarPerfil = async (userSession) => {
@@ -15,11 +16,10 @@ export function AuthProvider({ children }) {
         const p = await getPerfil(userSession.user.id);
         setPerfil(p);
       } catch (error) {
-        console.error("Error cargando perfil:", error.message);
-        // Si el token no sirve, forzamos cerrar sesión
+        console.error('Error cargando perfil:', error.message);
         setPerfil(null);
-        setSession(null); 
-        await supabase.auth.signOut(); // Esto limpia el token corrupto
+        setSession(null);
+        await supabase.auth.signOut();
       }
     } else {
       setPerfil(null);
@@ -37,14 +37,26 @@ export function AuthProvider({ children }) {
   };
 
   useEffect(() => {
-    // 1. Carga inicial
     const inicializar = async () => {
       try {
         const s = await getSession();
         setSession(s);
         await cargarPerfil(s);
       } catch (e) {
-        console.log("Error inicial:", e);
+        
+        const msg = e?.message || '';
+        if (
+          msg.includes('Refresh Token Not Found') ||
+          msg.includes('Invalid Refresh Token')   ||
+          msg.includes('refresh_token_not_found')
+        ) {
+          console.log('Token inválido al arrancar — limpiando sesión');
+          await supabase.auth.signOut();
+          setSession(null);
+          setPerfil(null);
+        } else {
+          console.log('Error de inicialización:', msg);
+        }
       } finally {
         setLoading(false);
       }
@@ -52,7 +64,7 @@ export function AuthProvider({ children }) {
 
     inicializar();
 
-    // 2. Escuchar cambios (Login/Logout)
+    // Escuchar cambios (login / logout / refresh automático)
     const { data: listener } = supabase.auth.onAuthStateChange(async (_event, s) => {
       setSession(s);
       await cargarPerfil(s);
@@ -60,9 +72,7 @@ export function AuthProvider({ children }) {
     });
 
     return () => {
-      if (listener?.subscription) {
-        listener.subscription.unsubscribe();
-      }
+      if (listener?.subscription) listener.subscription.unsubscribe();
     };
   }, []);
 

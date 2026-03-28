@@ -258,9 +258,9 @@ const ModalForm = ({ visible, editando, datos, onChange, onGuardar, onCerrar, en
   const estados     = ['Pendiente', 'En Progreso', 'En Revisión', 'Completada'];
 
   const onDateChange = (event, selectedDate) => {
-    setShowPicker(false); // Ocultar el picker tras seleccionar
+    setShowPicker(false); 
     if (selectedDate) {
-      // Guardamos la fecha en formato ISO para la base de datos
+      
       onChange({ ...datos, fecha_finalizacion: selectedDate.toISOString() });
     }
   };
@@ -601,7 +601,7 @@ export default function TareasView() {
         </TouchableOpacity>
       </View>
 
-      {/* Filtro prioridad — tamaño fijo, no cambia con el contenido */}
+      {/* Filtro prioridad — */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -746,14 +746,13 @@ const s = StyleSheet.create({
   container:    { flex: 1, backgroundColor: '#06090f', padding: 16 },
   centered:     { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, paddingTop: 60 },
 
-  // Stats — el scroll no toca el layout circundante
   statsScroll:   { flexGrow: 0, flexShrink: 0, marginBottom: 14 },
   statsContent:  { flexDirection: 'row', gap: 10, paddingRight: 4 },
   statCard: {
     backgroundColor: '#0f1520',
     borderRadius: 12,
     padding: 12,
-    width: 90,           // ← ancho fijo; nunca crece
+    width: 90,           
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.07)',
   },
@@ -775,11 +774,11 @@ const s = StyleSheet.create({
   btnNuevo:     { backgroundColor: '#3b82f6', borderRadius: 10, paddingHorizontal: 14, justifyContent: 'center' },
   btnNuevoText: { color: '#fff', fontWeight: '700', fontSize: 13 },
 
-  // Filtro prioridad — CLAVE: scroll no crece, chips con tamaño intrínseco
+  // Filtro prioridad 
   filtroScroll:   { flexGrow: 0, flexShrink: 0, marginBottom: 14 },
   filtroContent:  { flexDirection: 'row', gap: 8, paddingRight: 4 },
   chipFiltro: {
-    // alignSelf: 'flex-start' evita que el chip se estire en el eje cruzado
+    
     alignSelf: 'flex-start',
     backgroundColor: '#0f1520',
     borderRadius: 20,
@@ -791,8 +790,6 @@ const s = StyleSheet.create({
   chipFiltroActivo: { borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,0.12)' },
   chipFiltroText:   { color: '#64748b', fontSize: 12 },
 
-
-  // Dentro de const s = StyleSheet.create({ ... })
   inputDate: {
     backgroundColor: '#0f1520',
     borderRadius: 10,
@@ -845,11 +842,11 @@ const s = StyleSheet.create({
   qiLabel:        { color: '#64748b', fontSize: 10, marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5 },
   qiVal:          { color: '#e2e8f4', fontSize: 13, fontWeight: '700' },
 
-  // Chips reutilizables dentro de modales
+  
   chipRow: {
     flexDirection: 'row',
     gap: 8,
-    // Sin flex: 1 → los chips no se estiran para rellenar
+    
   },
   chipEstado: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
@@ -890,7 +887,7 @@ const s = StyleSheet.create({
     backgroundColor: '#151d2e',
     borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)',
     borderRadius: 20, paddingHorizontal: 14, paddingVertical: 8,
-    alignSelf: 'flex-start',   // ← no crece para rellenar
+    alignSelf: 'flex-start',   
   },
   chipSelectorActive: { borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,0.12)' },
   chipSelectorText:   { color: '#64748b', fontSize: 13 },

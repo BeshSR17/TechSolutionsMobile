@@ -10,12 +10,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../services/auth';
 
-// Pantallas placeholder — las iremos construyendo
-import MisTareasScreen   from '../MisTareasScreen';
+
 import PerfilScreen      from '../PerfilScreen';
 import ChatScreen        from '../ChatScreen';
 
-// Vistas admin (placeholders por ahora)
+
 import ClientesView  from './ClientesView';
 import ProyectosView from './ProyectosView';
 import TareasView    from './TareasView';
@@ -59,7 +58,6 @@ useEffect(() => {
   };
   cargarAvatar();
 
-  // SUSCRIPCIÓN REALTIME PARA EL AVATAR DEL ADMIN
   const canalAvatar = supabase
     .channel(`avatar-admin-${adminId}`)
     .on('postgres_changes', {
@@ -204,7 +202,7 @@ useEffect(() => {
         {renderSeccion()}
       </View>
 
-      {/* ── OVERLAY oscuro cuando sidebar está abierto ── */}
+      {/* ── OVERLAY ── */}
       {sidebarVisible && (
         <TouchableOpacity
           style={styles.overlay}
@@ -271,7 +269,7 @@ useEffect(() => {
         </Animated.View>
       )}
 
-      {/* ── BOTTOM TAB BAR (acceso rápido móvil) ── */}
+      {/* ── BOTTOM TAB BAR ── */}
       <View style={styles.tabBar}>
         {NAV_ITEMS.map(item => {
           const activo = seccion === item.id;

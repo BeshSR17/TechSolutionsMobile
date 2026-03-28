@@ -1,11 +1,4 @@
 // screens/MisTareasScreen.js
-// Tareas del colaborador — paridad funcional con TareasView.jsx de la web:
-//   • Avance con slider (chips de %)
-//   • Cambio de estado (Iniciar / Enviar a Revisión)
-//   • Notas adjuntas (comentarios) con eliminar
-//   • Links adjuntos con eliminar
-//   • Historial de sesión
-//   • Alertas de días restantes
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, FlatList, TouchableOpacity,

@@ -1,7 +1,4 @@
-// screens/ChatScreen.js
-// Chat estilo WhatsApp — dual mode:
-//   • Admin → lista de todos los usuarios + chat individual
-//   • Usuario → chat directo con el admin (como AyudaView)
+
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
@@ -13,8 +10,6 @@ import { supabase } from '../services/auth';
 import { useAuth } from '../context/AuthContext';
 import { getPerfiles } from '../services/api';
 
-// ── ID del admin — misma variable que en la web ───────────────────────────────
-// Ponlo en tu .env como EXPO_PUBLIC_ADMIN_ID=xxxxx-xxxx-...
 const ADMIN_ID = process.env.EXPO_PUBLIC_ADMIN_ID || null;
 
 const { width: SCREEN_W } = Dimensions.get('window');
@@ -121,7 +116,7 @@ const PerfilContacto = ({ contacto, onCerrar }) => {
   );
 };
 
-// ── Chat individual (reutilizable para admin y usuario) ───────────────────────
+// ── Chat individual ────────────
 const ChatIndividual = ({ miId, contacto, onVolver, modoUsuario = false }) => {
   const [mensajes,  setMensajes]  = useState([]);
   const [texto,     setTexto]     = useState('');
@@ -130,8 +125,15 @@ const ChatIndividual = ({ miId, contacto, onVolver, modoUsuario = false }) => {
   const [verPerfil, setVerPerfil] = useState(false);
   const flatRef = useRef(null);
   const insets  = useSafeAreaInsets();
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
 
-  // Cargar historial + marcar leídos
+  useEffect(() => {
+    const mostrar = Keyboard.addListener('keyboardDidShow', (e) => setKeyboardHeight(e.endCoordinates.height));
+    const ocultar = Keyboard.addListener('keyboardDidHide', () => setKeyboardHeight(0));
+    return () => { mostrar.remove(); ocultar.remove(); };
+  }, []);
+
+  
   useEffect(() => {
     if (!miId || !contacto?.id) return;
     const cargar = async () => {
@@ -147,7 +149,6 @@ const ChatIndividual = ({ miId, contacto, onVolver, modoUsuario = false }) => {
       setMensajes(data || []);
       setCargando(false);
 
-      // Marcar como leídos los mensajes entrantes
       await supabase
         .from('mensajes')
         .update({ leido: true })
@@ -158,7 +159,7 @@ const ChatIndividual = ({ miId, contacto, onVolver, modoUsuario = false }) => {
     cargar();
   }, [miId, contacto?.id]);
 
-  // Realtime — escuchar mensajes nuevos del contacto
+  // Realtime
   useEffect(() => {
     if (!miId || !contacto?.id) return;
     const canalId = `chat-${[miId, contacto.id].sort().join('-')}`;
@@ -177,7 +178,7 @@ const ChatIndividual = ({ miId, contacto, onVolver, modoUsuario = false }) => {
     return () => supabase.removeChannel(canal);
   }, [miId, contacto?.id]);
 
-  // Auto-scroll al último mensaje
+  // Auto-scroll
   useEffect(() => {
     if (mensajes.length > 0 && flatRef.current) {
       setTimeout(() => flatRef.current?.scrollToEnd({ animated: true }), 100);
@@ -190,7 +191,6 @@ const ChatIndividual = ({ miId, contacto, onVolver, modoUsuario = false }) => {
     setTexto('');
     Keyboard.dismiss();
 
-    // Optimistic update
     const optimista = {
       id: `tmp-${Date.now()}`,
       remitente_id: miId,
@@ -210,14 +210,13 @@ const ChatIndividual = ({ miId, contacto, onVolver, modoUsuario = false }) => {
         .single();
       setMensajes(prev => prev.map(m => m.id === optimista.id ? (data || m) : m));
     } catch {
-      // Revertir si falla
       setMensajes(prev => prev.filter(m => m.id !== optimista.id));
     } finally {
       setEnviando(false);
     }
   };
 
-  // Agrupar por fecha
+  // Agrupar mensajes por fecha
   const items = [];
   let fechaActual = null;
   mensajes.forEach(msg => {
@@ -268,21 +267,13 @@ const ChatIndividual = ({ miId, contacto, onVolver, modoUsuario = false }) => {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior="padding"
-      keyboardVerticalOffset={Platform.OS === 'android' ? 25 : 0}
-    >
+    <View style={{ flex: 1 }}>
       {/* Header */}
       <View style={s.chatHeader}>
-        {onVolver ? (
-          <TouchableOpacity onPress={onVolver} style={s.backBtn}>
-            <Text style={s.backArrow}>←</Text>
-          </TouchableOpacity>
-        ) : (
-          <View style={{ width: 40 }} />
-        )}
-
+        {onVolver
+          ? <TouchableOpacity onPress={onVolver} style={s.backBtn}><Text style={s.backArrow}>←</Text></TouchableOpacity>
+          : <View style={{ width: 40 }} />
+        }
         <TouchableOpacity style={s.chatHeaderInfo} onPress={() => setVerPerfil(true)}>
           <Avatar url={contacto.avatar_url} nombre={contacto.nombre}
             size={38} showOnline isOnline={contacto.estado === 'Activo'} />
@@ -295,7 +286,6 @@ const ChatIndividual = ({ miId, contacto, onVolver, modoUsuario = false }) => {
             </Text>
           </View>
         </TouchableOpacity>
-
         <TouchableOpacity style={s.infoBtn} onPress={() => setVerPerfil(true)}>
           <Text style={s.infoBtnIcon}>ℹ️</Text>
         </TouchableOpacity>
@@ -320,10 +310,7 @@ const ChatIndividual = ({ miId, contacto, onVolver, modoUsuario = false }) => {
             <View style={s.centered}>
               <Text style={{ fontSize: 44, marginBottom: 8 }}>👋</Text>
               <Text style={s.emptyText}>
-                {modoUsuario
-                  ? '¡Escríbele al administrador!'
-                  : '¡Inicia la conversación!'
-                }
+                {modoUsuario ? '¡Escríbele al administrador!' : '¡Inicia la conversación!'}
               </Text>
             </View>
           }
@@ -331,7 +318,11 @@ const ChatIndividual = ({ miId, contacto, onVolver, modoUsuario = false }) => {
       )}
 
       {/* Input */}
-      <View style={[s.inputArea, { paddingBottom: Math.max(insets.bottom, 8) }]}>
+      <View style={[s.inputArea, {
+        paddingBottom: keyboardHeight > 0
+          ? keyboardHeight - insets.bottom + 8
+          : Math.max(insets.bottom, 8),
+      }]}>
         <TextInput
           style={s.msgInput}
           placeholder="Escribe un mensaje..."
@@ -351,15 +342,14 @@ const ChatIndividual = ({ miId, contacto, onVolver, modoUsuario = false }) => {
         </TouchableOpacity>
       </View>
 
-      {/* Perfil del contacto */}
       {verPerfil && (
         <PerfilContacto contacto={contacto} onCerrar={() => setVerPerfil(false)} />
       )}
-    </KeyboardAvoidingView>
+    </View>
   );
 };
 
-// ── Lista de conversaciones (solo para admin) ─────────────────────────────────
+// ── Lista de conversaciones (solo admin) ──────────────────────────────────────
 const ConversacionesList = ({ miId, onSeleccionar }) => {
   const [usuarios,  setUsuarios]  = useState([]);
   const [loading,   setLoading]   = useState(true);
@@ -367,22 +357,17 @@ const ConversacionesList = ({ miId, onSeleccionar }) => {
   const [noLeidos,  setNoLeidos]  = useState({});
   const [ultimoMsg, setUltimoMsg] = useState({});
 
-  // Carga todos los perfiles (el admin tiene acceso a esta ruta)
   useEffect(() => {
     const cargar = async () => {
       try {
         const data = await getPerfiles();
         setUsuarios((data || []).filter(u => u.id !== miId));
-      } catch {
-        /* silencioso */
-      } finally {
-        setLoading(false);
-      }
+      } catch { /* silencioso */ }
+      finally { setLoading(false); }
     };
     cargar();
   }, [miId]);
 
-  // Último mensaje + no leídos por usuario
   useEffect(() => {
     if (!miId || usuarios.length === 0) return;
     const cargarResumenes = async () => {
@@ -413,7 +398,6 @@ const ConversacionesList = ({ miId, onSeleccionar }) => {
     cargarResumenes();
   }, [miId, usuarios]);
 
-  // Realtime — actualizar lista con mensajes nuevos
   useEffect(() => {
     if (!miId) return;
     const canal = supabase
@@ -430,11 +414,9 @@ const ConversacionesList = ({ miId, onSeleccionar }) => {
     return () => supabase.removeChannel(canal);
   }, [miId]);
 
-  const ordenados = [...usuarios].sort((a, b) => {
-    const tA = ultimoMsg[a.id]?.creado_en || '';
-    const tB = ultimoMsg[b.id]?.creado_en || '';
-    return tB.localeCompare(tA);
-  });
+  const ordenados = [...usuarios].sort((a, b) =>
+    (ultimoMsg[b.id]?.creado_en || '').localeCompare(ultimoMsg[a.id]?.creado_en || '')
+  );
 
   const filtrados = ordenados.filter(u =>
     u.nombre?.toLowerCase().includes(busqueda.toLowerCase()) ||
@@ -447,10 +429,7 @@ const ConversacionesList = ({ miId, onSeleccionar }) => {
     return (
       <TouchableOpacity
         style={s.conversaItem}
-        onPress={() => {
-          setNoLeidos(prev => ({ ...prev, [item.id]: 0 }));
-          onSeleccionar(item);
-        }}
+        onPress={() => { setNoLeidos(prev => ({ ...prev, [item.id]: 0 })); onSeleccionar(item); }}
         activeOpacity={0.75}
       >
         <Avatar url={item.avatar_url} nombre={item.nombre}
@@ -468,9 +447,7 @@ const ConversacionesList = ({ miId, onSeleccionar }) => {
               }
             </Text>
             {count > 0 && (
-              <View style={s.badge}>
-                <Text style={s.badgeText}>{count > 99 ? '99+' : count}</Text>
-              </View>
+              <View style={s.badge}><Text style={s.badgeText}>{count > 99 ? '99+' : count}</Text></View>
             )}
           </View>
         </View>
@@ -490,9 +467,7 @@ const ConversacionesList = ({ miId, onSeleccionar }) => {
         />
       </View>
       {loading ? (
-        <View style={s.centered}>
-          <ActivityIndicator color="#3b82f6" size="large" />
-        </View>
+        <View style={s.centered}><ActivityIndicator color="#3b82f6" size="large" /></View>
       ) : filtrados.length === 0 ? (
         <View style={s.centered}>
           <Text style={{ fontSize: 40 }}>💬</Text>
@@ -511,44 +486,30 @@ const ConversacionesList = ({ miId, onSeleccionar }) => {
   );
 };
 
-// ── Vista de usuario: chat directo con el admin ───────────────────────────────
+// ── Chat directo con el admin (modo usuario) ──────────────────────────────────
 const ChatConAdmin = ({ miId }) => {
   const [adminPerfil, setAdminPerfil] = useState(null);
   const [loading,     setLoading]     = useState(true);
 
   useEffect(() => {
     const cargarAdmin = async () => {
-      if (!ADMIN_ID) {
-        // Fallback: buscar el primer admin en la tabla perfiles
-        const { data } = await supabase
-          .from('perfiles')
-          .select('*')
-          .in('rol', ['Administrador', 'Admin'])
-          .limit(1)
-          .single();
-        setAdminPerfil(data || {
-          id: ADMIN_ID,
-          nombre: 'Administrador',
-          rol: 'Administrador',
-          estado: 'Activo',
-          avatar_url: null,
-        });
-      } else {
-        // Cargar perfil del admin por su ID
-        const { data } = await supabase
-          .from('perfiles')
-          .select('*')
-          .eq('id', ADMIN_ID)
-          .single();
-        setAdminPerfil(data || {
-          id: ADMIN_ID,
-          nombre: 'Administrador',
-          rol: 'Administrador',
-          estado: 'Activo',
-          avatar_url: null,
-        });
+      try {
+        if (ADMIN_ID) {
+          // ID definido en .env → consulta directa por ID
+          const { data } = await supabase
+            .from('perfiles').select('*').eq('id', ADMIN_ID).single();
+          setAdminPerfil(data || { id: ADMIN_ID, nombre: 'Administrador', rol: 'Administrador', estado: 'Activo', avatar_url: null });
+        } else {
+          // Sin .env → fallback: busca el primer Administrador en la tabla
+          const { data } = await supabase
+            .from('perfiles').select('*').in('rol', ['Administrador', 'Admin']).limit(1).single();
+          setAdminPerfil(data || null);
+        }
+      } catch {
+        setAdminPerfil(null);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
     cargarAdmin();
   }, []);
@@ -571,46 +532,36 @@ const ChatConAdmin = ({ miId }) => {
     );
   }
 
-  return (
-    <ChatIndividual
-      miId={miId}
-      contacto={adminPerfil}
-      onVolver={null}        // no hay volver en modo usuario
-      modoUsuario
-    />
-  );
+  return <ChatIndividual miId={miId} contacto={adminPerfil} onVolver={null} modoUsuario />;
 };
 
 // ── Pantalla principal ────────────────────────────────────────────────────────
 export default function ChatScreen() {
   const { session, perfil } = useAuth();
-  const miId = session?.user?.id;
-
+  const miId   = session?.user?.id;
   const esAdmin = perfil?.rol === 'Administrador' || perfil?.rol === 'Admin';
 
-  // Estado para la vista del admin
-  const [vista,    setVista]    = useState('lista'); // 'lista' | 'chat'
+  const [vista,    setVista]    = useState('lista');
   const [contacto, setContacto] = useState(null);
 
   if (!miId) {
-    return (
-      <View style={s.centered}>
-        <ActivityIndicator color="#3b82f6" />
-      </View>
-    );
+    return <View style={s.centered}><ActivityIndicator color="#3b82f6" /></View>;
   }
 
-  // ── Modo usuario: chat directo con admin ───────────────────────────────────
+  // Modo usuario → directo al chat con admin
   if (!esAdmin) {
     return (
       <SafeAreaView style={s.safe} edges={[]}>
-        
+        <View style={s.listaHeader}>
+          <Text style={s.listaHeaderTitle}>Chat de Dudas</Text>
+          <Text style={s.listaHeaderSub}>Habla directamente con el administrador</Text>
+        </View>
         <ChatConAdmin miId={miId} />
       </SafeAreaView>
     );
   }
 
-  // ── Modo admin: lista de conversaciones ────────────────────────────────────
+  // Modo admin → lista de conversaciones
   return (
     <SafeAreaView style={s.safe} edges={[]}>
       {vista === 'lista' ? (
@@ -640,23 +591,13 @@ const s = StyleSheet.create({
   centered:  { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10, paddingTop: 40 },
   emptyText: { color: '#64748b', fontSize: 13, textAlign: 'center', paddingHorizontal: 32 },
 
-  listaHeader: {
-    paddingHorizontal: 20, paddingTop: 14, paddingBottom: 10,
-    borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.06)',
-  },
+  listaHeader:      { paddingHorizontal: 20, paddingTop: 14, paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.06)' },
   listaHeaderTitle: { color: '#e2e8f4', fontSize: 22, fontWeight: '800' },
   listaHeaderSub:   { color: '#64748b', fontSize: 12, marginTop: 2 },
 
-  // Búsqueda
   searchWrap:  { paddingHorizontal: 16, paddingVertical: 10 },
-  searchInput: {
-    backgroundColor: '#0f1520', borderRadius: 20,
-    paddingHorizontal: 16, paddingVertical: 10,
-    color: '#e2e8f4', fontSize: 14,
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.07)',
-  },
+  searchInput: { backgroundColor: '#0f1520', borderRadius: 20, paddingHorizontal: 16, paddingVertical: 10, color: '#e2e8f4', fontSize: 14, borderWidth: 1, borderColor: 'rgba(255,255,255,0.07)' },
 
-  // Lista de conversaciones
   conversaItem:        { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 13, gap: 12 },
   conversaInfo:        { flex: 1, minWidth: 0 },
   conversaTop:         { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 3 },
@@ -669,12 +610,7 @@ const s = StyleSheet.create({
   badgeText:           { color: '#fff', fontSize: 11, fontWeight: '700' },
   separator:           { height: 1, backgroundColor: 'rgba(255,255,255,0.04)', marginLeft: 78 },
 
-  // Chat header
-  chatHeader: {
-    flexDirection: 'row', alignItems: 'center',
-    backgroundColor: '#0b0f1a', paddingHorizontal: 8, paddingVertical: 10,
-    borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.06)', gap: 4,
-  },
+  chatHeader:       { flexDirection: 'row', alignItems: 'center', backgroundColor: '#0b0f1a', paddingHorizontal: 8, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.06)', gap: 4 },
   backBtn:          { padding: 8 },
   backArrow:        { color: '#3b82f6', fontSize: 22, fontWeight: '600' },
   chatHeaderInfo:   { flex: 1, flexDirection: 'row', alignItems: 'center' },
@@ -683,67 +619,46 @@ const s = StyleSheet.create({
   infoBtn:          { padding: 8 },
   infoBtnIcon:      { fontSize: 20 },
 
-  // Mensajes
-  msgList:       { paddingHorizontal: 12, paddingVertical: 16, gap: 4 },
-  fechaDivider:  { alignItems: 'center', marginVertical: 12 },
-  fechaDividerText: {
-    backgroundColor: 'rgba(255,255,255,0.06)', color: '#64748b', fontSize: 11,
-    paddingHorizontal: 12, paddingVertical: 4, borderRadius: 12, overflow: 'hidden',
-  },
-  msgRow:      { flexDirection: 'row', alignItems: 'flex-end', marginVertical: 2, gap: 6 },
-  msgRowPropio:{ justifyContent: 'flex-end' },
-  msgRowAjeno: { justifyContent: 'flex-start' },
-  burbuja:     { maxWidth: SCREEN_W * 0.72, borderRadius: 18, paddingHorizontal: 14, paddingVertical: 9 },
-  burbujaPropia:       { backgroundColor: '#2563eb', borderBottomRightRadius: 4 },
-  burbujaAjena:        { backgroundColor: '#151d2e', borderWidth: 1, borderColor: 'rgba(255,255,255,0.07)', borderBottomLeftRadius: 4 },
-  burbujaTexto:        { fontSize: 14.5, lineHeight: 20 },
-  burbujaTextoPropio:  { color: '#fff' },
-  burbujaTextoAjeno:   { color: '#d4d8e8' },
+  msgList:          { paddingHorizontal: 12, paddingVertical: 16, gap: 4 },
+  fechaDivider:     { alignItems: 'center', marginVertical: 12 },
+  fechaDividerText: { backgroundColor: 'rgba(255,255,255,0.06)', color: '#64748b', fontSize: 11, paddingHorizontal: 12, paddingVertical: 4, borderRadius: 12, overflow: 'hidden' },
+  msgRow:           { flexDirection: 'row', alignItems: 'flex-end', marginVertical: 2, gap: 6 },
+  msgRowPropio:     { justifyContent: 'flex-end' },
+  msgRowAjeno:      { justifyContent: 'flex-start' },
+  burbuja:          { maxWidth: SCREEN_W * 0.72, borderRadius: 18, paddingHorizontal: 14, paddingVertical: 9 },
+  burbujaPropia:    { backgroundColor: '#2563eb', borderBottomRightRadius: 4 },
+  burbujaAjena:     { backgroundColor: '#151d2e', borderWidth: 1, borderColor: 'rgba(255,255,255,0.07)', borderBottomLeftRadius: 4 },
+  burbujaTexto:         { fontSize: 14.5, lineHeight: 20 },
+  burbujaTextoPropio:   { color: '#fff' },
+  burbujaTextoAjeno:    { color: '#d4d8e8' },
   msgMeta:  { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3, justifyContent: 'flex-end' },
   msgHora:  { color: 'rgba(255,255,255,0.3)', fontSize: 10 },
   msgTick:  { fontSize: 10, color: 'rgba(255,255,255,0.5)' },
 
-  // Input
-  inputArea: {
-    flexDirection: 'row', alignItems: 'flex-end', gap: 10,
-    paddingHorizontal: 12, paddingTop: 10,
-    backgroundColor: '#0b0f1a',
-    borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.06)',
-  },
-  msgInput: {
-    flex: 1, backgroundColor: '#151d2e', borderRadius: 24,
-    paddingHorizontal: 16, paddingVertical: 10,
-    color: '#e2e8f4', fontSize: 14, maxHeight: 120,
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)',
-  },
-  sendBtn: {
-    width: 44, height: 44, borderRadius: 22, backgroundColor: '#2563eb',
-    alignItems: 'center', justifyContent: 'center',
-    shadowColor: '#2563eb', shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.4, shadowRadius: 8, elevation: 4,
-  },
-  sendBtnDisabled: { backgroundColor: '#1e293b', shadowOpacity: 0 },
-  sendIcon:        { color: '#fff', fontSize: 16, marginLeft: 2 },
+  inputArea:      { flexDirection: 'row', alignItems: 'flex-end', gap: 10, paddingHorizontal: 12, paddingTop: 10, backgroundColor: '#0b0f1a', borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.06)' },
+  msgInput:       { flex: 1, backgroundColor: '#151d2e', borderRadius: 24, paddingHorizontal: 16, paddingVertical: 10, color: '#e2e8f4', fontSize: 14, maxHeight: 120, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },
+  sendBtn:        { width: 44, height: 44, borderRadius: 22, backgroundColor: '#2563eb', alignItems: 'center', justifyContent: 'center', shadowColor: '#2563eb', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.4, shadowRadius: 8, elevation: 4 },
+  sendBtnDisabled:{ backgroundColor: '#1e293b', shadowOpacity: 0 },
+  sendIcon:       { color: '#fff', fontSize: 16, marginLeft: 2 },
 
-  // Perfil modal
-  perfilModal:       { flex: 1, backgroundColor: '#06090f' },
-  perfilHeader:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 12, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.06)' },
-  perfilHeaderTitle: { color: '#e2e8f4', fontSize: 16, fontWeight: '700' },
-  perfilHero:        { alignItems: 'center', paddingVertical: 32, gap: 10 },
-  perfilNombre:      { color: '#e2e8f4', fontSize: 22, fontWeight: '800', marginTop: 8 },
-  perfilRolBadge:    { backgroundColor: 'rgba(59,130,246,0.1)', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 5, borderWidth: 1, borderColor: 'rgba(59,130,246,0.2)' },
-  perfilRolText:     { color: '#3b82f6', fontSize: 13, fontWeight: '600' },
-  estadoBadge:       { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 5, borderRadius: 20, borderWidth: 1 },
-  estadoActivo:      { backgroundColor: 'rgba(16,185,129,0.1)', borderColor: 'rgba(16,185,129,0.2)' },
-  estadoInactivo:    { backgroundColor: 'rgba(100,116,139,0.1)', borderColor: 'rgba(100,116,139,0.2)' },
-  estadoDot:         { width: 7, height: 7, borderRadius: 4 },
-  estadoText:        { fontSize: 12, fontWeight: '600' },
-  perfilSection:     { paddingHorizontal: 20, paddingBottom: 40, gap: 4 },
-  perfilSectionTitle:{ color: '#3a4558', fontSize: 9, fontWeight: '700', letterSpacing: 1.5, fontFamily: 'monospace', marginBottom: 12, marginTop: 8 },
-  perfilRow:         { flexDirection: 'row', alignItems: 'flex-start', gap: 14, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)' },
-  perfilRowIcon:     { fontSize: 20, marginTop: 2 },
-  perfilRowLabel:    { color: '#64748b', fontSize: 11, marginBottom: 3 },
-  perfilRowVal:      { color: '#e2e8f4', fontSize: 14, fontWeight: '500' },
-  perfilBioBox:      { backgroundColor: '#0f1520', borderRadius: 14, padding: 16, marginTop: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)' },
-  perfilBioText:     { color: '#94a3b8', fontSize: 14, lineHeight: 22 },
+  perfilModal:        { flex: 1, backgroundColor: '#06090f' },
+  perfilHeader:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 12, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.06)' },
+  perfilHeaderTitle:  { color: '#e2e8f4', fontSize: 16, fontWeight: '700' },
+  perfilHero:         { alignItems: 'center', paddingVertical: 32, gap: 10 },
+  perfilNombre:       { color: '#e2e8f4', fontSize: 22, fontWeight: '800', marginTop: 8 },
+  perfilRolBadge:     { backgroundColor: 'rgba(59,130,246,0.1)', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 5, borderWidth: 1, borderColor: 'rgba(59,130,246,0.2)' },
+  perfilRolText:      { color: '#3b82f6', fontSize: 13, fontWeight: '600' },
+  estadoBadge:        { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 5, borderRadius: 20, borderWidth: 1 },
+  estadoActivo:       { backgroundColor: 'rgba(16,185,129,0.1)', borderColor: 'rgba(16,185,129,0.2)' },
+  estadoInactivo:     { backgroundColor: 'rgba(100,116,139,0.1)', borderColor: 'rgba(100,116,139,0.2)' },
+  estadoDot:          { width: 7, height: 7, borderRadius: 4 },
+  estadoText:         { fontSize: 12, fontWeight: '600' },
+  perfilSection:      { paddingHorizontal: 20, paddingBottom: 40, gap: 4 },
+  perfilSectionTitle: { color: '#3a4558', fontSize: 9, fontWeight: '700', letterSpacing: 1.5, fontFamily: 'monospace', marginBottom: 12, marginTop: 8 },
+  perfilRow:          { flexDirection: 'row', alignItems: 'flex-start', gap: 14, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)' },
+  perfilRowIcon:      { fontSize: 20, marginTop: 2 },
+  perfilRowLabel:     { color: '#64748b', fontSize: 11, marginBottom: 3 },
+  perfilRowVal:       { color: '#e2e8f4', fontSize: 14, fontWeight: '500' },
+  perfilBioBox:       { backgroundColor: '#0f1520', borderRadius: 14, padding: 16, marginTop: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)' },
+  perfilBioText:      { color: '#94a3b8', fontSize: 14, lineHeight: 22 },
 });

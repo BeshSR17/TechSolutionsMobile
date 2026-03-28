@@ -1,7 +1,7 @@
 // services/api.js
 import { getSession } from './auth';
 
-const BASE_URL = 'https://techsolutions-production-dcad.up.railway.app';
+const BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
 
 async function authFetch(endpoint, options = {}) {
   const method = options.method || 'GET';
@@ -55,10 +55,10 @@ export const actualizarTarea = (id, datos)  =>
   authFetch(`/api/tareas/${id}`, { method: 'PUT', body: JSON.stringify(datos) });
 
 // ── Admin — Tareas ────────────────────────────────────────────────────────────
-export const getTodasTareas      = ()          => authFetch('/api/tareas');
-export const crearTarea          = (datos)     =>
+export const getTodasTareas       = ()          => authFetch('/api/tareas');
+export const crearTarea           = (datos)     =>
   authFetch('/api/tareas', { method: 'POST', body: JSON.stringify(datos) });
-export const eliminarTarea       = (id)        =>
+export const eliminarTarea        = (id)        =>
   authFetch(`/api/tareas/${id}`, { method: 'DELETE' });
 export const actualizarTareaAdmin = (id, datos) =>
   authFetch(`/api/tareas/${id}`, { method: 'PUT', body: JSON.stringify(datos) });
@@ -68,12 +68,12 @@ export const getExtras = (tareaId) =>
   authFetch(`/api/tareas/${tareaId}/extras`);
 
 // ── Admin — Clientes ──────────────────────────────────────────────────────────
-export const getClientes      = ()          => authFetch('/api/clientes');
-export const crearCliente     = (datos)     =>
+export const getClientes       = ()           => authFetch('/api/clientes');
+export const crearCliente      = (datos)      =>
   authFetch('/api/clientes', { method: 'POST', body: JSON.stringify(datos) });
-export const actualizarCliente = (id, datos) =>
+export const actualizarCliente = (id, datos)  =>
   authFetch(`/api/clientes/${id}`, { method: 'PUT', body: JSON.stringify(datos) });
-export const eliminarCliente  = (id)        =>
+export const eliminarCliente   = (id)         =>
   authFetch(`/api/clientes/${id}`, { method: 'DELETE' });
 
 // ── Admin — Proyectos ─────────────────────────────────────────────────────────
@@ -86,9 +86,9 @@ export const eliminarProyecto   = (id)         =>
   authFetch(`/api/proyectos/${id}`, { method: 'DELETE' });
 
 // ── Admin — General ───────────────────────────────────────────────────────────
-export const getTodas     = () => authFetch('/api/tareas');
-export const getPerfiles  = () => authFetch('/api/perfiles');
-export const getUsuarios  = () => authFetch('/api/usuarios');
+export const getTodas    = () => authFetch('/api/tareas');
+export const getPerfiles = () => authFetch('/api/perfiles');
+export const getUsuarios = () => authFetch('/api/usuarios');
 
 // ── Perfil ────────────────────────────────────────────────────────────────────
 export const getPerfil        = (id)        => authFetch(`/api/perfiles/${id}`);

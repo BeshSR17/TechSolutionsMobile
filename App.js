@@ -1,4 +1,4 @@
-// App.js - reemplaza todo el contenido con esto
+// App.js
 import 'react-native-url-polyfill/auto';
 import { AuthProvider } from './src/context/AuthContext';
 import AppNavigator from './src/navigation/AppNavigator';

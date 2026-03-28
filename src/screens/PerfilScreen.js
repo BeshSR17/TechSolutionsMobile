@@ -87,8 +87,7 @@ export default function PerfilScreen() {
 
     setLoading(true);
     try {
-      // Nombre/biografía van a Railway — NO a supabase.auth.updateUser({ data })
-      // porque eso dispara onAuthStateChange → recarga de perfil → bloqueo async
+      
       await actualizarPerfil(userId, { biografia, nombre });
 
       if (newPassword) {

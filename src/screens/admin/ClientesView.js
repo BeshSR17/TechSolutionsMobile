@@ -3,7 +3,7 @@ import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
   TextInput, ActivityIndicator, Alert, ScrollView, RefreshControl, Modal, KeyboardAvoidingView, Platform
 } from 'react-native';
-// Importación con los nombres exactos de tu api.js
+
 import { getClientes, crearCliente, actualizarCliente, eliminarCliente } from '../../services/api';
 
 const ESTADO_CFG = {
