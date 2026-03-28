@@ -40,8 +40,3 @@ yarn-error.*
 /ios
 /android
 
-*/.env
-
-# Variables de entorno — nunca subir al repo
-.env
-.env.*

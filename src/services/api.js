@@ -1,11 +1,10 @@
 // services/api.js
 import { getSession } from './auth';
+import Constants from 'expo-constants';
 
-const BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
+const BASE_URL = 'https://techsolutions-production-dcad.up.railway.app';
 
 async function authFetch(endpoint, options = {}) {
-  const method = options.method || 'GET';
-
   try {
     const session = await getSession();
     const token = session?.access_token;
