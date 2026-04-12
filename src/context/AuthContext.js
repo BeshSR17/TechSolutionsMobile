@@ -1,5 +1,6 @@
 // context/AuthContext.js
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { AppState } from 'react-native';                          
 import { supabase, getSession } from '../services/auth';
 import { getPerfil } from '../services/api';
 
@@ -37,42 +38,42 @@ export function AuthProvider({ children }) {
   };
 
   useEffect(() => {
-    const inicializar = async () => {
-      try {
-        const s = await getSession();
-        setSession(s);
-        await cargarPerfil(s);
-      } catch (e) {
-        
-        const msg = e?.message || '';
-        if (
-          msg.includes('Refresh Token Not Found') ||
-          msg.includes('Invalid Refresh Token')   ||
-          msg.includes('refresh_token_not_found')
-        ) {
-          console.log('Token inválido al arrancar — limpiando sesión');
-          await supabase.auth.signOut();
-          setSession(null);
-          setPerfil(null);
-        } else {
-          console.log('Error de inicialización:', msg);
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    inicializar();
-
-    // Escuchar cambios (login / logout / refresh automático)
+    
     const { data: listener } = supabase.auth.onAuthStateChange(async (_event, s) => {
       setSession(s);
       await cargarPerfil(s);
       setLoading(false);
     });
 
+    getSession().then(s => {
+      if (!s) {
+        setSession(null);
+        setPerfil(null);
+        setLoading(false);
+      }
+    }).catch(async (e) => {
+      const msg = e?.message || '';
+      if (
+        msg.includes('Refresh Token Not Found') ||
+        msg.includes('Invalid Refresh Token')   ||
+        msg.includes('refresh_token_not_found')
+      ) {
+        console.log('Token inválido al arrancar — limpiando sesión');
+        await supabase.auth.signOut();
+      }
+      setSession(null);
+      setPerfil(null);
+      setLoading(false);
+    });
+
+    const appStateSub = AppState.addEventListener('change', state => {
+      if (state === 'active') supabase.auth.startAutoRefresh();
+      else supabase.auth.stopAutoRefresh();
+    });
+
     return () => {
-      if (listener?.subscription) listener.subscription.unsubscribe();
+      listener?.subscription?.unsubscribe();
+      appStateSub.remove();
     };
   }, []);
 

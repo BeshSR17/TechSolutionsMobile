@@ -25,21 +25,33 @@ function UserTabs() {
   );
 }
 
+function LoadingScreen() {
+  return (
+    <View style={{ flex: 1, justifyContent: 'center', backgroundColor: '#06090f' }}>
+      <ActivityIndicator size="large" color="#2563eb" />
+    </View>
+  );
+}
+
 export default function AppNavigator() {
   const { session, perfil, loading } = useAuth();
 
   if (loading) {
-    return <View style={{ flex: 1, justifyContent: 'center' }}>
-      <ActivityIndicator size="large" />
-    </View>;
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', backgroundColor: '#06090f' }}>
+        <ActivityIndicator size="large" color="#2563eb" />
+      </View>
+    );
   }
 
   return (
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
-        {!session || !perfil ? ( // Si no hay sesión O no cargó el perfil, al Login
+        {!session ? ( 
           <Stack.Screen name="Login" component={LoginScreen} />
-        ) : perfil.rol === 'Administrador' ? (
+        ) : !perfil ? ( 
+          <Stack.Screen name="Loading" component={LoadingScreen} />
+      ): perfil.rol === 'Administrador' ? (
           <Stack.Screen name="Admin" component={AdminDashboard} />
         ) : (
           <Stack.Screen name="User" component={UserDashboard} />
